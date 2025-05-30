@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iPhone: The Pocket Universe</title>
+    <style>
+        :root {
+            --color-bg-dark: #0a0a1e;
+            --color-bg-light: #f4f7f6;
+            --color-primary: #007aff; /* Apple Blue */
+            --color-secondary: #ff9500; /* Orange */
+            --color-accent: #34c759; /* Green */
+            --color-text-dark: #1d1d1f;
+            --color-text-light: #f5f5f7;
+            --color-glass-bg: rgba(255, 255, 255, 0.1);
+            --color-glass-border: rgba(255, 255, 255, 0.2);
+            --blur-strong: 15px;
+            --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            --transition-smooth: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            --shadow-neumorphic-inset: inset 5px 5px 10px #070715, inset -5px -5px 10px #0d0d27;
+            --shadow-neumorphic-outset: 10px 10px 20px #070715, -10px -10px 20px #0d0d27;
+            --shadow-soft: 0 10px 30px rgba(0,0,0,0.1);
+            --gradient-hero: linear-gradient(135deg, #6e8efb, #a777e3);
+            --gradient-appstore: linear-gradient(45deg, #f953c6, #b91d73);
+        }
+
+        /* Accessibility: Reduced Motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        /* Base Styles */
+        html {
+            scroll-behavior: smooth;
+            font-size: 16px; /* Base for rem units */
+        }
+
+        body {
+            margin: 0;
+            font-family: var(--font-primary);
+            background-color: var(--color-bg-dark);
+            color: var(--color-text-light);
+            line-height: 1.6;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Custom Scrollbar (Optional, but adds to polish) */
+        body::-webkit-scrollbar {
+            width: 8px;
+        }
+        body::-webkit-scrollbar-track {
+            background: var(--color-bg-dark);
+        }
+        body::-webkit-scrollbar-thumb {
+            background-color: var(--color-primary);
+            border-radius: 10px;
+            border: 2px solid var(--color-bg-dark);
+        }
+
+        /* General Section Styling */
+        .section {
+            min-height: 100vh;
+            padding: 100px 5vw; /* Responsive padding */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            overflow: hidden; /* For internal absolute positioned elements */
+            opacity: 0; /* Initial state for scroll animation */
+            transform: translateY(50px); /* Initial state for scroll animation */
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+
+        .section.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        h1, h2, h3 {
+            margin-bottom: 1rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        h1 { font-size: clamp(2.5rem, 6vw, 4.5rem); } /* Responsive font size */
+        h2 { font-size: clamp(2rem, 5vw, 3.5rem); }
+        h3 { font-size: clamp(1.5rem, 4vw, 2.5rem); }
+        p { font-size: clamp(1rem, 2.5vw, 1.2rem); max-width: 700px; margin-left: auto; margin-right: auto;}
+
+        /* Interactive Element Base */
+        .interactive-element {
+            transition: var(--transition-smooth);
+            cursor: pointer;
+        }
+        .interactive-element:hover, .interactive-element:focus-visible {
+            transform: scale(1.05);
+            filter: brightness(1.2);
+        }
+        .interactive-element:focus-visible {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 3px;
+        }
+
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--color-bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+        }
+        .loading-screen .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255,255,255,0.3);
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Particle Background (JS driven) */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Behind content */
+        }
+
+        /* Navigation (Sticky) */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 15px 5vw;
+            background: rgba(10, 10, 30, 0.7); /* Dark transparent bg */
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--color-glass-border);
+        }
+        nav .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--color-text-light);
+            text-decoration: none;
+        }
+        nav ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+        nav ul li {
+            margin-left: 20px;
+        }
+        nav ul li a {
+            color: var(--color-text-light);
+            text-decoration: none;
+            font-weight: 500;
+            padding: 5px 10px;
+            border-radius: 5px;
+            transition: var(--transition-smooth);
+        }
+        nav ul li a:hover, nav ul li a.active {
+            background-color: var(--color-primary);
+            color: var(--color-text-light);
+        }
+        /* Mobile Nav Toggle */
+        .nav-toggle { display: none; } /* Hidden on desktop */
+
+
+        /* Section 1: Hero - "The Phenomenon" */
+        #hero {
+            background: var(--gradient-hero); /* Dynamic Gradient */
+            color: var(--color-text-light);
+        }
+        #hero h1 {
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            animation: fadeInDown 1s ease-out 0.5s backwards;
+        }
+        #hero p {
+            animation: fadeInUp 1s ease-out 0.8s backwards;
+        }
+        .iphone-silhouette {
+            margin-top: 2rem;
+            width: 150px; /* Adjust as needed */
+            height: 300px; /* Adjust as needed */
+            background: rgba(0,0,0,0.2);
+            border: 3px solid rgba(255,255,255,0.5);
+            border-radius: 30px; /* iPhone-like rounded corners */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: var(--shadow-neumorphic-outset), 0 0 50px rgba(255,255,255,0.1) inset;
+            position: relative; /* For pseudo elements */
+            animation: pulseGlow 3s infinite ease-in-out 1s;
+        }
+        .iphone-silhouette::before { /* Screen area */
+            content: '';
+            width: 88%;
+            height: 92%;
+            background: rgba(10,10,30,0.5); /* Dark screen */
+            border-radius: 20px;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: var(--shadow-neumorphic-outset), 0 0 50px rgba(255,255,255,0.1) inset; transform: scale(1); }
+            50% { box-shadow: var(--shadow-neumorphic-outset), 0 0 70px rgba(255,255,255,0.2) inset, 0 0 20px var(--color-secondary); transform: scale(1.03); }
+        }
+
+        /* Keyframes for entry animations */
+        @keyframes fadeInDown { from { opacity:0; transform: translate3d(0,-50px,0); } to { opacity:1; transform: translate3d(0,0,0); } }
+        @keyframes fadeInUp { from { opacity:0; transform: translate3d(0,50px,0); } to { opacity:1; transform: translate3d(0,0,0); } }
+        @keyframes fadeInLeft { from { opacity:0; transform: translate3d(-50px,0,0); } to { opacity:1; transform: translate3d(0,0,0); } }
+        @keyframes fadeInRight { from { opacity:0; transform: translate3d(50px,0,0); } to { opacity:1; transform: translate3d(0,0,0); } }
+
+
+        /* Section 2: The Spark - "Genesis of Genius" */
+        #spark {
+            background-color: #1c1c1e; /* Slightly lighter dark */
+        }
+        #spark .quote {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            font-style: italic;
+            margin: 2rem auto;
+            padding: 1.5rem;
+            border-left: 5px solid var(--color-primary);
+            background: var(--color-glass-bg);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 8px;
+            max-width: 600px;
+            box-shadow: var(--shadow-soft);
+        }
+
+
+        /* Section 3: By The Numbers - "A Universe of Scale" */
+        #numbers {
+            background-color: var(--color-bg-dark);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 3rem;
+        }
+        .stat-card {
+            background: var(--color-glass-bg);
+            border: 1px solid var(--color-glass-border);
+            backdrop-filter: blur(var(--blur-strong));
+            -webkit-backdrop-filter: blur(var(--blur-strong));
+            padding: 2rem 1.5rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            transition: var(--transition-smooth);
+        }
+        .stat-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 12px 40px 0 rgba(0, 122, 255, 0.3);
+        }
+        .stat-card .stat-number {
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .stat-card .stat-label {
+            font-size: 1rem;
+            color: var(--color-text-light_alpha_70, rgba(245,245,247,0.7));
+        }
+        /* Simple Bar Chart for revenue share */
+        .pie-chart-visual {
+            width: 150px; height: 150px;
+            border-radius: 50%;
+            background-image: conic-gradient(var(--color-secondary) 0% 55%, var(--color-accent) 55% 100%);
+            margin: 1rem auto;
+            display:flex; justify-content:center; align-items:center; font-weight:bold; font-size: 1.2rem;
+            box-shadow: var(--shadow-neumorphic-inset);
+        }
+
+
+        /* Section 4: Global Tapestry - "Crafting the Colossus" */
+        #supply-chain {
+            background: linear-gradient(rgba(10, 10, 30, 0.8), rgba(10, 10, 30, 0.8)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M12.5 0 L12.5 100 M37.5 0 L37.5 100 M62.5 0 L62.5 100 M87.5 0 L87.5 100 M0 12.5 L100 12.5 M0 37.5 L100 37.5 M0 62.5 L100 62.5 M0 87.5 L100 87.5" stroke="%231a1a3a" stroke-width="1"/></svg>');
+            /* Placeholder for a more complex map background */
+            background-size: 50px 50px, cover;
+        }
+        .supply-chain-visualization {
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            margin-top: 2rem;
+            /* This would typically be an SVG or a more complex canvas animation */
+        }
+        .supply-node {
+            background: var(--color-primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            margin: 10px;
+            display: inline-block;
+            box-shadow: 0 0 15px var(--color-primary);
+            animation: pulseNode 2s infinite alternate;
+        }
+        .supply-node.design { background: var(--color-accent); box-shadow: 0 0 15px var(--color-accent); }
+        .supply-node.assembly { background: var(--color-secondary); box-shadow: 0 0 15px var(--color-secondary); }
+        @keyframes pulseNode {
+            from { transform: scale(0.95); opacity: 0.8; }
+            to { transform: scale(1.05); opacity: 1; }
+        }
+        .supply-connections p { margin: 0.5rem 0; }
+
+
+        /* Section 5: App Revolution - "A Million Worlds in Your Pocket" */
+        #app-revolution {
+            background: var(--gradient-appstore);
+        }
+        .app-grid-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 2rem;
+            perspective: 1000px;
+        }
+        .app-icon-mock {
+            width: 80px;
+            height: 80px;
+            background: var(--color-glass-bg);
+            border-radius: 15px; /* iOS like */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            border: 1px solid var(--color-glass-border);
+            box-shadow: var(--shadow-soft);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .app-icon-mock:hover {
+            transform: translateY(-5px) rotateY(10deg) scale(1.1);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .app-stats .stat-card { background: rgba(0,0,0,0.3); } /* Different style for this section */
+
+
+        /* Section 6: Economic Engine */
+        #economic-engine {
+            background-color: #2c2c2e;
+        }
+        .impact-card-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .impact-card {
+            background: var(--color-glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 1.5rem;
+            width: 300px;
+            border: 1px solid var(--color-glass-border);
+            box-shadow: var(--shadow-soft);
+            text-align: left;
+        }
+        .impact-card h3 {
+            color: var(--color-primary);
+            margin-top: 0;
+            font-size: 1.5rem;
+        }
+        .impact-card svg { /* For icons */
+            width: 40px; height: 40px; fill: var(--color-primary); margin-bottom: 1rem;
+        }
+
+
+        /* Section 7: More Than a Device - "An Extension of You" */
+        #extension {
+            background-color: var(--color-bg-light);
+            color: var(--color-text-dark);
+        }
+        #extension h2, #extension p { color: var(--color-text-dark); }
+        .feature-cards-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        .feature-card {
+            width: 250px;
+            height: 300px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+        .feature-card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            box-shadow: var(--shadow-soft);
+            border-radius: 15px;
+        }
+        .feature-card:hover .feature-card-inner {
+            transform: rotateY(180deg);
+        }
+        .feature-card-front, .feature-card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 15px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+        .feature-card-front {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            color: white;
+        }
+        .feature-card-front h4 { font-size: 1.5rem; margin-top: 0.5rem;}
+        .feature-card-front svg { width: 50px; height: 50px; fill: white; }
+        .feature-card-back {
+            background: var(--color-accent);
+            color: white;
+            transform: rotateY(180deg);
+        }
+        .feature-card-back p { font-size: 0.9rem; color: white; }
+
+
+        /* Section 8: The Horizon - "Continuously Redefined" */
+        #horizon {
+            background: radial-gradient(circle, #1a1a3a 0%, var(--color-bg-dark) 70%);
+        }
+        #horizon h2 {
+            color: var(--color-primary);
+            text-shadow: 0 0 15px var(--color-primary);
+        }
+        .pulsing-orb {
+            width: 100px;
+            height: 100px;
+            background: var(--color-primary);
+            border-radius: 50%;
+            margin: 2rem auto;
+            box-shadow: 0 0 30px var(--color-primary), 0 0 60px var(--color-primary);
+            animation: pulseOrb 2.5s infinite ease-in-out;
+        }
+        @keyframes pulseOrb {
+            0% { transform: scale(0.9); box-shadow: 0 0 30px var(--color-primary), 0 0 60px var(--color-primary); opacity: 0.7; }
+            50% { transform: scale(1.1); box-shadow: 0 0 50px var(--color-secondary), 0 0 90px var(--color-secondary); opacity: 1; }
+            100% { transform: scale(0.9); box-shadow: 0 0 30px var(--color-primary), 0 0 60px var(--color-primary); opacity: 0.7; }
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: #05050f; /* Even darker footer */
+            color: var(--color-text-light_alpha_70, rgba(245,245,247,0.7));
+            font-size: 0.9rem;
+        }
+        footer a { color: var(--color-primary); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+
+
+        /* Responsive Adjustments for Navigation */
+        @media (max-width: 768px) {
+            nav ul {
+                display: none; /* Hide on mobile initially */
+                flex-direction: column;
+                position: absolute;
+                top: 65px; /* Height of nav */
+                left: 0;
+                width: 100%;
+                background: rgba(10, 10, 30, 0.95); /* Solid for readability */
+                backdrop-filter: blur(5px);
+                -webkit-backdrop-filter: blur(5px);
+            }
+            nav ul.active { display: flex; } /* Show when toggled */
+            nav ul li {
+                margin: 10px 0;
+                text-align: center;
+            }
+            .nav-toggle {
+                display: block; /* Show hamburger */
+                background: none;
+                border: none;
+                color: white;
+                font-size: 1.8rem;
+                cursor: pointer;
+            }
+        }
+
+        /* Utility Classes */
+        .hidden { display: none; }
+        .text-gradient {
+            background: var(--gradient-hero);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="loading-screen">
+        <div class="spinner"></div>
+    </div>
+
+    <canvas id="particle-canvas"></canvas>
+
+    <nav id="main-nav">
+        <a href="#hero" class="logo interactive-element">iPhone Universe</a>
+        <button class="nav-toggle interactive-element" aria-label="Toggle navigation" aria-expanded="false">☰</button>
+        <ul>
+            <li><a href="#hero" class="interactive-element">Home</a></li>
+            <li><a href="#spark" class="interactive-element">Genesis</a></li>
+            <li><a href="#numbers" class="interactive-element">Scale</a></li>
+            <li><a href="#supply-chain" class="interactive-element">Global</a></li>
+            <li><a href="#app-revolution" class="interactive-element">Apps</a></li>
+            <li><a href="#economic-engine" class="interactive-element">Impact</a></li>
+            <li><a href="#extension" class="interactive-element">You</a></li>
+            <li><a href="#horizon" class="interactive-element">Future</a></li>
+        </ul>
+    </nav>
+
+    <main>
+        <section id="hero" class="section" data-nav="Home">
+            <h1 aria-label="The iPhone: The Most Profitable Product in History">The <span class="text-gradient">iPhone</span></h1>
+            <p>The most profitable product in history. A revolution in your pocket.</p>
+            <div class="iphone-silhouette" aria-hidden="true"></div>
+            <p style="margin-top: 2rem; font-size: 0.9rem;">Scroll to explore the universe of the iPhone</p>
+        </section>
+
+        <section id="spark" class="section" data-nav="Genesis">
+            <h2>Genesis of <span class="text-gradient">Genius</span></h2>
+            <p>Apple has made hundreds of billions from iPhone sales alone. But it's more than just sales figures.</p>
+            <div class="quote" role="blockquote">
+                "It's not just a phone—it's a platform, a status symbol, and a pocket-sized computer."
+            </div>
+            <p>A vision that reshaped technology and human connection.</p>
+        </section>
+
+        <section id="numbers" class="section" data-nav="Scale">
+            <h2>A Universe of <span class="text-gradient">Scale</span></h2>
+            <p>The numbers behind the phenomenon are simply staggering.</p>
+            <div class="stats-grid">
+                <div class="stat-card interactive-element" aria-labelledby="units-sold-label">
+                    <span class="stat-number" data-target="2320">0</span>
+                    <span class="stat-label" id="units-sold-label">Million+ Units Sold (Cumulative: >2.32 Billion)</span>
+                </div>
+                <div class="stat-card interactive-element" aria-labelledby="annual-sales-label">
+                    <span class="stat-number" data-target="235">0</span>
+                    <span class="stat-label" id="annual-sales-label">Million Units Sold Annually (Avg. Recent)</span>
+                </div>
+                <div class="stat-card interactive-element" aria-labelledby="revenue-label">
+                    <span class="stat-number" data-target="50" data-suffix="%+">0%</span>
+                    <span class="stat-label" id="revenue-label">of Apple's Total Revenue</span>
+                    <div class="pie-chart-visual" aria-label="Pie chart showing iPhone contributing over 50% to Apple's revenue">iPhone</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="supply-chain" class="section" data-nav="Global">
+            <h2>The Global <span class="text-gradient">Tapestry</span></h2>
+            <p>Crafting the colossus: A marvel of global collaboration and precision engineering.</p>
+            <div class="supply-chain-visualization">
+                <p>Designed in <span class="supply-node design interactive-element"  tabindex="0" aria-label="Designed in Cupertino, USA">Cupertino, USA</span></p>
+                <p>Components from around the world: <span class="supply-node interactive-element" tabindex="0" aria-label="Chips from TSMC, Taiwan">Chips (TSMC)</span>, <span class="supply-node interactive-element" tabindex="0" aria-label="Displays from Samsung/LG, South Korea">Displays (Samsung/LG)</span>, <span class="supply-node interactive-element" tabindex="0" aria-label="Camera Sensors from Sony, Japan">Sensors (Sony)</span></p>
+                <p>Assembled with precision in <span class="supply-node assembly interactive-element" tabindex="0" aria-label="Assembly primarily in China by Foxconn/Pegatron, expanding to India">China, India & Vietnam (Foxconn, Pegatron)</span></p>
+                <p>A network of <strong>hundreds of suppliers</strong> and <strong>millions of skilled hands</strong>.</p>
+            </div>
+        </section>
+
+        <section id="app-revolution" class="section" data-nav="Apps">
+            <h2>The App <span class="text-gradient">Revolution</span></h2>
+            <p>"There's an app for that." A phrase that defined an era, powered by the iPhone.</p>
+            <div class="stats-grid app-stats">
+                 <div class="stat-card interactive-element" aria-labelledby="apps-count-label">
+                    <span class="stat-number" data-target="1.8" data-suffix="M+">0</span>
+                    <span class="stat-label" id="apps-count-label">Apps on the App Store</span>
+                </div>
+                <div class="stat-card interactive-element" aria-labelledby="dev-payout-label">
+                    <span class="stat-number" data-target="320" data-suffix="B+">0</span>
+                    <span class="stat-label" id="dev-payout-label">Paid to Developers Since 2008</span>
+                </div>
+                 <div class="stat-card interactive-element" aria-labelledby="app-economy-label">
+                    <span class="stat-number" data-target="1.1" data-suffix="T+">0</span>
+                    <span class="stat-label" id="app-economy-label">In App Store Commerce Facilitated (2022)</span>
+                </div>
+            </div>
+            <div class="app-grid-container" aria-label="A grid of conceptual app icons">
+                <div class="app-icon-mock interactive-element" aria-hidden="true"></div>
+                <div class="app-icon-mock interactive-element" aria-hidden="true">🎮</div>
+                <div class="app-icon-mock interactive-element" aria-hidden="true">📸</div>
+                <div class="app-icon-mock interactive-element" aria-hidden="true">🎵</div>
+                <div class="app-icon-mock interactive-element" aria-hidden="true">🗺️</div>
+                <div class="app-icon-mock interactive-element" aria-hidden="true">💬</div>
+                <div class="app-icon-mock interactive-element" aria-hidden="true">🛒</div>
+                <div class="app-icon-mock interactive-element" aria-hidden="true">💡</div>
+            </div>
+        </section>
+
+        <section id="economic-engine" class="section" data-nav="Impact">
+            <h2>Economic <span class="text-gradient">Engine</span></h2>
+            <p>Transforming industries, empowering nations, and creating millions of opportunities.</p>
+            <div class="impact-card-container">
+                <div class="impact-card interactive-element" tabindex="0" aria-labelledby="jobs-impact">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                    <h3 id="jobs-impact">Job Creation</h3>
+                    <p>Millions of jobs globally in design, R&D, manufacturing, app development, retail, and logistics.</p>
+                </div>
+                <div class="impact-card interactive-element" tabindex="0" aria-labelledby="accessory-market-impact">
+                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 6h-2c0-2.76-2.24-5-5-5S7 3.24 7 6H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-7-3c1.66 0 3 1.34 3 3H9c0-1.66 1.34-3 3-3zm7 15H5V8h14v10z"/></svg>
+                    <h3 id="accessory-market-impact">Thriving Accessory Market</h3>
+                    <p>A multi-billion dollar industry for cases, chargers, headphones, and countless other innovations.</p>
+                </div>
+                <div class="impact-card interactive-element" tabindex="0" aria-labelledby="mobile-economy-impact">
+                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.79-5.14L13 10V9c0-1.1-.9-2-2-2h-.07c.03-.33.07-.66.07-1 0-2.76-2.24-5-5-5-.34 0-.67.04-1 .07V4.07c3.95.49 7 3.85 7 7.93 0 .62-.08 1.21-.21 1.79z"/></svg>
+                    <h3 id="mobile-economy-impact">Catalyst for Mobile Economy</h3>
+                    <p>Pioneered the mobile-first world, enabling new business models and digital transformation.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="extension" class="section" data-nav="You">
+            <h2>More Than a Device. <span class="text-gradient">An Extension of You.</span></h2>
+            <p>It connects, creates, captures, entertains, and empowers. It's deeply personal.</p>
+            <div class="feature-cards-container">
+                <div class="feature-card interactive-element" tabindex="0" aria-label="Communication Card: Connects you to the world. Flip for details.">
+                    <div class="feature-card-inner">
+                        <div class="feature-card-front">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
+                            <h4>Communicate</h4>
+                        </div>
+                        <div class="feature-card-back">
+                            <p>Voice, text, video. Across the street or across the globe. Keeping you connected to what matters.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-card interactive-element" tabindex="0" aria-label="Creativity Card: Unleash your inner artist. Flip for details.">
+                    <div class="feature-card-inner">
+                        <div class="feature-card-front">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17V7h2.59l2.71-2.71c.63-.63 1.71-.19 1.71.71V6h4v proteína2H12v1.29c0 .9-.94 1.51-1.71.88L7.58 9H5v8zm14-4c0 2.21-1.79 4-4 4s-4-1.79-4-4 1.79-4 4-4 4 1.79 4 4z m-2 0c0-1.1-.9-2-2-2s-2 .9-2 2 .9 2 2 2 2-.9 2-2zM3 5H1v14c0 1.1.9 2 2 2h14v-2H3V5z"/></svg>
+                            <h4>Create</h4>
+                        </div>
+                        <div class="feature-card-back">
+                            <p>Capture stunning photos and videos. Edit masterpieces. Write, draw, compose. Your pocket studio.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-card interactive-element" tabindex="0" aria-label="Productivity Card: Get things done, anywhere. Flip for details.">
+                    <div class="feature-card-inner">
+                        <div class="feature-card-front">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zM9 16H7v-2h2v2zm0-4H7v-2h2v2zm4 4h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V7h2v1zm3 4h-2v-2h2v2zM13 9V4l5 5h-5z"/></svg>
+                            <h4>Produce</h4>
+                        </div>
+                        <div class="feature-card-back">
+                            <p>Manage your life and work. Access information instantly. Your powerful, portable office and assistant.</p>
+                        </div>
+                    </div>
+                </div>
+                 <div class="feature-card interactive-element" tabindex="0" aria-label="Entertainment Card: A universe of fun. Flip for details.">
+                    <div class="feature-card-inner">
+                        <div class="feature-card-front">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h5v2h8v-2h5c1.1 0 1.99-.9 1.99-2L23 5c0-1.1-.9-2-2-2zm-1 14H4V5h16v12z M7 10.5v3l4-1.5z"/></svg>
+                            <h4>Play</h4>
+                        </div>
+                        <div class="feature-card-back">
+                            <p>Games, movies, music, books. Endless entertainment at your fingertips. Your escape and your joy.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="horizon" class="section" data-nav="Future">
+            <h2>The <span class="text-gradient">Horizon</span></h2>
+            <p>Continuously redefined. The journey of innovation never stops.</p>
+            <div class="pulsing-orb" aria-hidden="true"></div>
+            <p>What wonders will the next generation unlock?</p>
+        </section>
+    </main>
+
+    <footer>
+        <p>© <span id="currentYear"></span> A tribute to the iPhone phenomenon. Crafted with passion.</p>
+        <p>Disclaimer: This is a conceptual, fan-made interactive experience for educational and appreciative purposes. Not affiliated with Apple Inc.</p>
+        <p>Data points are estimates based on publicly available information and may vary.</p>
+    </footer>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const loadingScreen = document.querySelector('.loading-screen');
+        if (loadingScreen) {
+            window.addEventListener('load', () => {
+                loadingScreen.style.opacity = '0';
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                }, 500); // Match CSS transition
+            });
+        }
+
+        // Smooth Scroll for Nav Links
+        document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    // For mobile nav: close after click
+                    const navUl = document.querySelector('nav ul');
+                    if (navUl.classList.contains('active')) {
+                        navUl.classList.remove('active');
+                        document.querySelector('.nav-toggle').setAttribute('aria-expanded', 'false');
+                    }
+                }
+            });
+        });
+
+        // Mobile Nav Toggle
+        const navToggle = document.querySelector('.nav-toggle');
+        const navUl = document.querySelector('nav ul');
+        if (navToggle && navUl) {
+            navToggle.addEventListener('click', () => {
+                navUl.classList.toggle('active');
+                const isExpanded = navUl.classList.contains('active');
+                navToggle.setAttribute('aria-expanded', isExpanded.toString());
+                navToggle.innerHTML = isExpanded ? '×' : '☰';
+            });
+        }
+
+
+        // Intersection Observer for section animations and active nav link
+        const sections = document.querySelectorAll('.section');
+        const navLinks = document.querySelectorAll('nav ul li a');
+
+        const observerOptions = {
+            root: null, // viewport
+            rootMargin: '0px',
+            threshold: 0.4 // 40% of section visible
+        };
+
+        const sectionObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+
+                    // Animate counters if section is visible
+                    if (entry.target.id === 'numbers' || entry.target.id === 'app-revolution') {
+                        animateCounters(entry.target);
+                    }
+                    
+                    // Update active nav link
+                    const currentSectionId = entry.target.id;
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${currentSectionId}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                    // observer.unobserve(entry.target); // Optional: stop observing after first animation
+                } else {
+                     // Optional: remove visibility if you want animations to replay on scroll up/down
+                    // entry.target.classList.remove('is-visible');
+                }
+            });
+        }, observerOptions);
+
+        sections.forEach(section => {
+            sectionObserver.observe(section);
+        });
+
+        // Animated Counters
+        function animateCounters(sectionElement) {
+            const counters = sectionElement.querySelectorAll('.stat-number');
+            counters.forEach(counter => {
+                if (counter.classList.contains('animated')) return; // Prevent re-animating
+
+                counter.classList.add('animated');
+                const target = +counter.getAttribute('data-target');
+                const suffix = counter.getAttribute('data-suffix') || '';
+                const duration = 1500; // ms
+                const increment = target / (duration / 16); // Assuming 60fps, update roughly every 16ms
+
+                let current = 0;
+                const updateCounter = () => {
+                    current += increment;
+                    if (current < target) {
+                        // For numbers with decimals like 1.8M, 2.32B
+                        if (target % 1 !== 0) {
+                             counter.innerText = parseFloat(current.toFixed(2)) + suffix;
+                        } else {
+                             counter.innerText = Math.ceil(current) + suffix;
+                        }
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        counter.innerText = target + suffix;
+                    }
+                };
+                requestAnimationFrame(updateCounter);
+            });
+        }
+        
+        // Particle Background (Simple Version)
+        const canvas = document.getElementById('particle-canvas');
+        if (canvas) {
+            const ctx = canvas.getContext('2d');
+            let particlesArray;
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            class Particle {
+                constructor(x, y, directionX, directionY, size, color) {
+                    this.x = x;
+                    this.y = y;
+                    this.directionX = directionX;
+                    this.directionY = directionY;
+                    this.size = size;
+                    this.color = color;
+                }
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+                    ctx.fillStyle = this.color;
+                    ctx.fill();
+                }
+                update() {
+                    if (this.x > canvas.width || this.x < 0) {
+                        this.directionX = -this.directionX;
+                    }
+                    if (this.y > canvas.height || this.y < 0) {
+                        this.directionY = -this.directionY;
+                    }
+                    this.x += this.directionX;
+                    this.y += this.directionY;
+                    this.draw();
+                }
+            }
+
+            function initParticles() {
+                particlesArray = [];
+                let numberOfParticles = (canvas.height * canvas.width) / 9000;
+                if (numberOfParticles > 150) numberOfParticles = 150; // Cap particles
+                for (let i = 0; i < numberOfParticles; i++) {
+                    let size = (Math.random() * 2) + 0.5;
+                    let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
+                    let y = (Math.random() * ((innerHeight - size * 2) - (size * 2)) + size * 2);
+                    let directionX = (Math.random() * .4) - .2;
+                    let directionY = (Math.random() * .4) - .2;
+                    let color = 'rgba(0, 122, 255, 0.3)'; // Muted primary color
+                    particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
+                }
+            }
+
+            function animateParticles() {
+                requestAnimationFrame(animateParticles);
+                ctx.clearRect(0, 0, innerWidth, innerHeight);
+                for (let i = 0; i < particlesArray.length; i++) {
+                    particlesArray[i].update();
+                }
+            }
+            
+            initParticles();
+            animateParticles();
+
+            window.addEventListener('resize', () => {
+                canvas.width = innerWidth;
+                canvas.height = innerHeight;
+                initParticles(); // Reinitialize particles on resize
+            });
+
+            // Mouse move effect for particles (subtle attraction/repulsion)
+            let mouse = { x: null, y: null, radius: 100 };
+            window.addEventListener('mousemove', (event) => {
+                mouse.x = event.clientX;
+                mouse.y = event.clientY;
+            });
+            // (More advanced particle interaction would go here - omitted for brevity but can be added)
+        }
+
+
+        // Current Year for Footer
+        document.getElementById('currentYear').textContent = new Date().getFullYear();
+
+        // Keyboard accessibility for flip cards
+        const featureCards = document.querySelectorAll('.feature-card');
+        featureCards.forEach(card => {
+            card.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault(); // Prevent scrolling on space
+                    // Simple toggle, assumes not focused on inner elements.
+                    // For robust solution, manage focus state or use a button inside.
+                    const innerCard = this.querySelector('.feature-card-inner');
+                    if (innerCard.style.transform === 'rotateY(180deg)') {
+                        innerCard.style.transform = 'rotateY(0deg)';
+                    } else {
+                        innerCard.style.transform = 'rotateY(180deg)';
+                    }
+                }
+            });
+        });
+        
+        // Parallax scrolling effect for backgrounds (simple example)
+        // More complex parallax can be achieved by adjusting background-position
+        // or transforming elements at different speeds.
+        // window.addEventListener('scroll', () => {
+        //     const scrolled = window.pageYOffset;
+        //     const heroSection = document.getElementById('hero');
+        //     if (heroSection) {
+        //          // Example: Make hero background move slower
+        //          // heroSection.style.backgroundPositionY = -(scrolled * 0.3) + 'px';
+        //     }
+        // });
+        // This type of parallax is often better on elements *inside* sections for performance.
+
+    });
+    </script>
+</body>
+</html>
